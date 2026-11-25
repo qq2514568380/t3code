@@ -1,3 +1,5 @@
+import { msg } from "gt-i18n";
+import { m } from "../i18n/messages.ts";
 import {
   DESKTOP_UPDATE_RESTART_MARKER_FILE,
   DESKTOP_UPDATE_IN_PROGRESS_MARKER_FILE,
@@ -943,7 +945,7 @@ export const make = Effect.gen(function* () {
             yield* updateState((current) =>
               reduceDesktopUpdateStateOnDownloadFailure(
                 { ...current, downloadedVersion: null },
-                "The downloaded update was removed. Download it again to install.",
+                m(msg("The downloaded update was removed. Download it again to install.")),
               ),
             );
             yield* finishUpdateAction("install");

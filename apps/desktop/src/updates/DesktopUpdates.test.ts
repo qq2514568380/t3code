@@ -11,6 +11,7 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Logger from "effect/Logger";
 import * as Option from "effect/Option";
+import * as PlatformError from "effect/PlatformError";
 import * as References from "effect/References";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
@@ -755,6 +756,30 @@ describe("DesktopUpdates", () => {
       ).pipe(Effect.provide(Layer.merge(TestClock.layer(), harness.layer)));
     },
   );
+
+  it.effect("still installs when checking the cached archive fails", () => {
+    const harness = makeHarness({
+      archiveExists: (path) =>
+        Effect.fail(PlatformError.systemError({
+          module: "FileSystem",
+          method: "exists",
+          _tag: "PermissionDenied",
+          pathOrDescriptor: path,
+        })),
+    });
+    return Effect.scoped(
+      Effect.gen(function* () {
+        const updates = yield* DesktopUpdates.DesktopUpdates;
+        yield* updates.configure;
+        yield* nextPublishedState(() => harness.emit("update-downloaded", {
+          version: "1.2.4",
+          downloadedFile: "/cache/update.zip",
+        }));
+        yield* updates.install;
+        assert.equal(harness.quitAndInstalls(), 1);
+      }),
+    ).pipe(Effect.provide(Layer.merge(TestClock.layer(), harness.layer)));
+  });
 
   it.effect("marks the backend stop for an install as an update restart", () => {
     let markersAtStop: ReadonlyArray<string> = [];
